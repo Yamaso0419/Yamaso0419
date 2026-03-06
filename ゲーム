@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sota's Trampoline Rescue</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            overflow: hidden;
+            background: linear-gradient(to bottom, #87ceeb 0%, #e0f6ff 100%);
+            font-family: 'Helvetica Neue', Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+        }
+
+        #game-container {
+            position: relative;
+            width: 100%;
+            max-width: 500px;
+            height: 100vh;
+            background: rgba(255, 255, 255, 0.1);
+            border-left: 2px solid rgba(255, 255, 255, 0.3);
+            border-right: 2px solid rgba(255, 255, 255, 0.3);
+            cursor: none;
+        }
+
+        canvas {
+            display: block;
+        }
+
+        #ui {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            color: #2c3e50;
+            pointer-events: none;
+        }
+
+        .score-board {
+            font-size: 24px;
+            font-weight: bold;
+        }
+
+        #overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            display: none;
+        }
+
+        button {
+            padding: 10px 25px;
+            font-size: 18px;
+            background: #38bdf8;
+            border: none;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            margin-top: 20px;
+        }
+
+        button:hover {
+            background: #0ea5e9;
+        }
+    </style>
+</head>
+<body>
+
+<div id="game-container">
+    <div id="ui">
+        <div class="score-board">SCORE: <span id="score">0</span></div>
+    </div>
+    <canvas id="gameCanvas"></canvas>
+    
+    <div id="overlay">
+        <h1 id="msg">GAME OVER</h1>
+        <p>Final Score: <span id="final-score">0</span></p>
+        <button onclick="resetGame()">RETRY</button>
+    </div>
+</div>
+
+<script>
+    const canvas = document.getElementById('gameCanvas');
+    const ctx = canvas.getContext('2d');
+    const scoreElement = document.getElementById('score');
+    const overlay = document.getElementById('overlay');
+    const finalScoreElement = document.getElementById('final-score');
+
+    // ゲーム設定
+    let score = 0;
+    let gameActive = true;
+    let canvasW, canvasH;
+
+    // トランポリン（プレイヤー）
+    const paddle = {
+        width: 100,
+        height: 15,
+        x: 0,
+        y: 0,
+        color: '#1e293b'
+    };
+
+    // 救助対象
+    let people = [];
+    const gravity = 0.15;
+
+    function init() {
+        resize();
+        paddle.y = canvasH - 60;
+        resetGame();
+        animate();
+    }
+
+    function resize() {
+        canvasW = canvas.width = document.getElementById('game-container').clientWidth;
+        canvasH = canvas.height = window.innerHeight;
+    }
+
+    function spawnPerson() {
+        people.push({
+            x: Math.random() * (canvasW - 30) + 15,
+            y: -50,
+            radius: 12,
+            vy: 2,
+            vx: (Math.random() - 0.5) * 2,
+            color: '#ef4444'
+        });
+    }
+
+    function drawPaddle() {
+        ctx.fillStyle = paddle.color;
+        // トランポリンの形
+        ctx.beginPath();
+        ctx.roundRect(
